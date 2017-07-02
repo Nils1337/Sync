@@ -100,6 +100,10 @@ public protocol SyncDelegate: class {
     }
 
     func perform(using context: NSManagedObjectContext) {
+        defer {     
+            self.updateExecuting(false)
+            self.updateFinished(true)
+        }
         do {
             try Sync.changes(self.changes, inEntityNamed: self.entityName, predicate: self.predicate, parent: self.parent, parentRelationship: self.parentRelationship, inContext: context, operations: self.filterOperations, shouldContinueBlock: { () -> Bool in
                 return !self.isCancelled
@@ -108,9 +112,6 @@ public protocol SyncDelegate: class {
             })
         } catch let error as NSError {
             print("Failed syncing changes \(error)")
-
-            self.updateExecuting(false)
-            self.updateFinished(true)
         }
     }
 
