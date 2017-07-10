@@ -10,7 +10,8 @@ public protocol SyncDelegate: class {
     /// - parameter parent:      The new item's parent. Do not mutate the contents of this element.
     ///
     /// - returns: The JSON used to create the new NSManagedObject.
-    func sync(_ sync: Sync, willInsert json: [String: Any], in entityNamed: String, parent: NSManagedObject?, updateObject: NSManagedObject?) -> [String: Any]
+    func insert(_ sync: Sync, willInsert json: [String: Any], in entityNamed: String, parent: NSManagedObject?, updateObject: NSManagedObject? = nil) -> [String: Any]
+    func update(json: [String: Any], updatedObject: NSManagedObject)
 }
 
 @objc public class Sync: Operation {
@@ -107,9 +108,10 @@ public protocol SyncDelegate: class {
         do {
             try Sync.changes(self.changes, inEntityNamed: self.entityName, predicate: self.predicate, parent: self.parent, parentRelationship: self.parentRelationship, inContext: context, operations: self.filterOperations, shouldContinueBlock: { () -> Bool in
                 return !self.isCancelled
-            }, objectJSONBlock: { objectJSON, updateObject -> [String: Any] in
-                return self.delegate?.sync(self, willInsert: objectJSON, in: self.entityName, parent: self.parent, updateObject: updatedObject) ?? objectJSON
-            })
+            }, objectJSONBlock: { objectJSON -> [String: Any] in
+                return self.delegate?.insert(self, willInsert: objectJSON, in: self.entityName, parent: self.parent) ?? objectJSON
+            }, updateBlock { JSON, updateObject -> [String: Any] in 
+                return self.delegate?.update(json: JSON, updateObject: updatedObject) ?? JSON})
         } catch let error as NSError {
             print("Failed syncing changes \(error)")
         }
@@ -125,7 +127,7 @@ public protocol SyncDelegate: class {
         updateCancelled(true)
     }
 
-    class func changes(_ changes: [[String: Any]], inEntityNamed entityName: String, predicate: NSPredicate?, parent: NSManagedObject?, parentRelationship: NSRelationshipDescription?, inContext context: NSManagedObjectContext, operations: Sync.OperationOptions, shouldContinueBlock: (() -> Bool)?, objectJSONBlock: ((_ objectJSON: [String: Any], updateObject: NSManagedObject?) -> [String: Any])?) throws {
+    class func changes(_ changes: [[String: Any]], inEntityNamed entityName: String, predicate: NSPredicate?, parent: NSManagedObject?, parentRelationship: NSRelationshipDescription?, inContext context: NSManagedObjectContext, operations: Sync.OperationOptions, shouldContinueBlock: (() -> Bool)?, objectJSONBlock: ((_ objectJSON: [String: Any]) -> [String: Any])?, updateBlock: ((JSON JSON: [String: Any], updateObject: NSManagedObject) -> [String: Any])? = nil) throws {
         guard let entity = NSEntityDescription.entity(forEntityName: entityName, in: context) else { fatalError("Entity named \(entityName) not found.") }
 
         let localPrimaryKey = entity.sync_localPrimaryKey()
@@ -157,7 +159,7 @@ public protocol SyncDelegate: class {
             let shouldContinue = shouldContinueBlock?() ?? true
             guard shouldContinue else { return }
 
-            let interceptedJSON = objectJSONBlock?(JSON, updatedObject) ?? JSON
+            let interceptedJSON = updateBlock?(JSON, updatedObject) ?? JSON
             updatedObject.sync_fill(with: interceptedJSON, parent: parent, parentRelationship: parentRelationship, context: context, operations: operations, shouldContinueBlock: shouldContinueBlock, objectJSONBlock: objectJSONBlock)
         }
 
