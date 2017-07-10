@@ -11,7 +11,7 @@ public protocol SyncDelegate: class {
     ///
     /// - returns: The JSON used to create the new NSManagedObject.
     func insert(_ sync: Sync, willInsert json: [String: Any], in entityNamed: String, parent: NSManagedObject?) -> [String: Any]
-    func update(json: [String: Any], updatedObject: NSManagedObject)
+    func update(json: [String: Any], updateObject: NSManagedObject) -> [String: Any]
 }
 
 @objc public class Sync: Operation {
