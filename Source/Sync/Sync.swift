@@ -110,7 +110,7 @@ public protocol SyncDelegate: class {
                 return !self.isCancelled
             }, objectJSONBlock: { objectJSON -> [String: Any] in
                 return self.delegate?.insert(self, willInsert: objectJSON, in: self.entityName, parent: self.parent) ?? objectJSON
-            }, updateBlock { JSON, updateObject -> [String: Any] in 
+            }, updateBlock: { JSON, updateObject -> [String: Any] in 
                 return self.delegate?.update(json: JSON, updateObject: updateObject) ?? JSON})
         } catch let error as NSError {
             print("Failed syncing changes \(error)")
