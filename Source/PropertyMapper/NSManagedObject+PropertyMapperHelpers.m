@@ -226,7 +226,7 @@ static NSString * const PropertyMapperDestroyKey = @"destroy";
     } else if (numberValueAndDateAttribute) {
         value = [NSDate dateFromUnixTimestampNumber:remoteValue];
     } else if (dataAttribute) {
-        value = [NSKeyedArchiver archivedDataWithRootObject:remoteValue];
+        //value = [NSKeyedArchiver archivedDataWithRootObject:remoteValue];
     } else if (numberValueAndDecimalAttribute) {
         NSNumber *number = (NSNumber *)remoteValue;
         value = [NSDecimalNumber decimalNumberWithDecimal:[number decimalValue]];
